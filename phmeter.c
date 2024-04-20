@@ -4,32 +4,10 @@
 
 #include "lcd459.h"
 #include "adcph.h"
-//ADC2 pin 25 PC2
-  //Store the average value of the sensor feedback
-
-void read_ph(void);
-
-int main(){
-
-    adc_init_ph();
-    lcd_init();
-    sci_init();
-
-    DDRC &= ~(1 << 1);
-    PORTC |= (1 << 1);
-
-    while(1){
-        sci_out(0xfe);              // Clear the screen
-        sci_out(0x51);
-        read_ph();
-        _delay_ms(2000);
-    }
-    return 0;
-}
 
 void read_ph(void){
     char bufph[20];
-    char bufraw[20];
+    //char bufraw[20];
     uint32_t avgValuetemp;
     uint16_t buf[10], temp;
 
@@ -65,12 +43,14 @@ void read_ph(void){
 
     unsigned int decimalVal = tempph % 100;
 
-    sprintf(bufph, "Raw: %u", avgValue);
+    /*
+    sprintf(bufraw, "Raw: %u", avgValue);
     lcd_moveto(0,0);
     lcd_stringout(bufph);
+    */
 
-    sprintf(bufraw, "pH: %u.%02u", phValue, decimalVal);
-    lcd_moveto(1,0);
-    lcd_stringout(bufraw);
+    sprintf(bufph, "pH: %u.%02u", phValue, decimalVal);
+    lcd_moveto(3,0);
+    lcd_stringout(bufph);
 }
 
