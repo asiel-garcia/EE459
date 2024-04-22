@@ -304,14 +304,17 @@ int main(void) {
             _delay_ms(500);
         }
 
-        int dispersed_nutrient = nutrientLevel * 1000;
         PORTD |= (1<<5);
-		_delay_ms(dispersed_nutrient);
+        for(int i = 0; i < nutrientLevel; i++){
+            _delay_ms(1000);
+        }
 		PORTD &= ~(1<<5);
 		_delay_ms(500);
 
 		PORTD |= (1<<6);
-		_delay_ms(dispersed_nutrient);
+		for(int i = 0; i < nutrientLevel; i++){
+            _delay_ms(1000);
+        }
 		PORTD &= ~(1<<6);
 		_delay_ms(500);
         

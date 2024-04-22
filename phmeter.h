@@ -1,3 +1,3 @@
-extern unsigned int phValue = 0;
-extern unsigned int decimalVal = 0;
+extern unsigned int phValue;
+extern unsigned int decimalVal;
 void read_ph(void);
