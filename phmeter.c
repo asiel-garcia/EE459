@@ -5,8 +5,8 @@
 #include "lcd459.h"
 #include "adcph.h"
 
-unsigned int phValue = 0;
-unsigned int decimalVal = 0;
+unsigned int phValue;
+unsigned int decimalVal;
 
 void read_ph(void){
     char bufph[20];
