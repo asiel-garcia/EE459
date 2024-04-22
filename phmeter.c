@@ -5,6 +5,9 @@
 #include "lcd459.h"
 #include "adcph.h"
 
+unsigned int phValue = 0;
+unsigned int decimalVal = 0;
+
 void read_ph(void){
     char bufph[20];
     //char bufraw[20];
@@ -39,9 +42,9 @@ void read_ph(void){
     uint16_t avgValue = avgValuetemp / 6; //avg adc value
     unsigned int milliv = avgValue * 5 / 10.24; //convert the analog into millivolt using 10.24 instead of 1024 to preserve decimal
     unsigned int tempph = 23 + (3.5 * milliv); // holding value = ph * 100 (+adjustment)
-    unsigned int phValue = tempph / 100; //getting truncated ph value
+    phValue = tempph / 100; //getting truncated ph value
 
-    unsigned int decimalVal = tempph % 100;
+    decimalVal = tempph % 100;
 
     /*
     sprintf(bufraw, "Raw: %u", avgValue);

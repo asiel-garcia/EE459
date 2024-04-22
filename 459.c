@@ -279,8 +279,42 @@ void loop() {
 
 int main(void) {
     setup();
+    //pump set ups
+    DDRB |= (1 << 7) | (1 << 0);
+	DDRD |= (1 << 5) | (1 << 6) | (1 << 7);
+
+	PORTB &= ~((1 << 7) | (1 << 0));
+	PORTD &= ~((1 << 5) | (1 << 6) | (1 << 7));
+
     while (1) {
         loop();
+        PORTB |= (1<<7); // run pump to plants without turning off
+        if((pHLevel - phValue) > 0.3){
+            //add acid
+            PORTD |= (1<<7);
+            _delay_ms(1000);
+            PORTD &= ~(1<<7);
+            _delay_ms(500);
+        }
+        else if((pHLevel - phValue) < 0.3){
+            //add base
+            PORTB |= (1<<0);
+            _delay_ms(1000);
+            PORTB &= ~(1<<0);
+            _delay_ms(500);
+        }
+
+        int dispersed_nutrient = nutrientLevel * 1000;
+        PORTD |= (1<<5);
+		_delay_ms(dispersed_nutrient);
+		PORTD &= ~(1<<5);
+		_delay_ms(500);
+
+		PORTD |= (1<<6);
+		_delay_ms(dispersed_nutrient);
+		PORTD &= ~(1<<6);
+		_delay_ms(500);
+        
     }
     return 0;
 }
