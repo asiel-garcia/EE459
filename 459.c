@@ -8,8 +8,10 @@
 
 #include "lcd459.h"
 #include "i2c.h"
-#include "adc459.h"
+//#include "adc459.h"
 #include "temphum.h"
+#include "adcph.h"
+#include "phmeter.h"
 
 
 #define FOSC 7372800
@@ -42,12 +44,107 @@ volatile unsigned long lastDebounceTime = 0;
 void sci_init(void);
 void lcd_init(void);
 void rotary_init(void);
-void adc_init(void);
+//void adc_init(void);
 void check_temp_hum(void);
 void updateDisplay(void);
 void updateSelector(void);
 void read_water_levels(void);
 void control_water_pump(void);
+void read_ph(void);
+unsigned char adc_read_channel0(void);
+unsigned char adc_read_channel2(void);
+unsigned char adc_read_channel3(void);
+
+
+
+// void adc_init(void)
+// {
+//     // Initialize the ADC
+//     ADMUX &= ~(1 << REFS1);
+//     ADMUX |= (1 << REFS0);
+
+//     ADCSRA |= ((1 << ADPS0) | (1 << ADPS1) | (1 << ADPS2));
+//     ADMUX |= (1 << ADLAR);
+//     ADCSRA |= (1 << ADEN);
+
+// }
+
+unsigned char adc_read_channel0(void)
+{
+		ADMUX &= ~(1 << REFS1);
+    ADMUX |= (1 << REFS0);
+
+    ADCSRA |= ((1 << ADPS0) | (1 << ADPS1) | (1 << ADPS2));
+    ADMUX |= (1 << ADLAR);
+    ADCSRA |= (1 << ADEN);
+		// Clear the previously selected channel
+    ADMUX &= 0xF0; 
+    //ADMUX |= (0<<MUX0);
+
+    ADCSRA |= (1 << ADSC);
+
+    // Convert an analog input and return the 8-bit result
+    while((ADCSRA & (1 << ADSC)) != 0)
+    {
+
+    }
+    unsigned char result = ADCH;
+    return result;
+
+}
+
+unsigned char adc_read_channel2(void)
+{
+		ADMUX &= ~(1 << REFS1);
+    ADMUX |= (1 << REFS0);
+
+    ADCSRA |= ((1 << ADPS0) | (1 << ADPS1) | (1 << ADPS2));
+    ADMUX |= (1 << ADLAR);
+    ADCSRA |= (1 << ADEN);
+    // Clear the previously selected channel
+    ADMUX &= 0xF0; 
+    ADMUX |= (1<<MUX1);
+
+    ADCSRA |= (1 << ADSC);
+
+    // Convert an analog input and return the 8-bit result
+    while((ADCSRA & (1 << ADSC)) != 0)
+    {
+
+    }
+    unsigned char result = ADCH;
+    return result;
+
+}
+unsigned char adc_read_channel3(void)
+{
+		ADMUX &= ~(1 << REFS1);
+    ADMUX |= (1 << REFS0);
+
+    ADCSRA |= ((1 << ADPS0) | (1 << ADPS1) | (1 << ADPS2));
+    ADMUX |= (1 << ADLAR);
+    ADCSRA |= (1 << ADEN);
+    // Clear the previously selected channel
+    ADMUX &= 0xF0; 
+    ADMUX |= (1<<MUX0)|(1<<MUX1);
+
+    ADCSRA |= (1 << ADSC);
+
+    // Convert an analog input and return the 8-bit result
+    while((ADCSRA & (1 << ADSC)) != 0)
+    {
+
+    }
+    unsigned char result = ADCH;
+    return result;
+
+}
+
+
+
+
+
+
 
 uint8_t i2c_io(uint8_t, uint8_t *, uint16_t, uint8_t *, uint16_t);
 void i2c_init(uint8_t);
@@ -206,26 +303,35 @@ ISR(INT1_vect) {
 		_delay_ms(100);
     switch (state) {
         case DEFAULT_VIEW:
+        _delay_ms(5);
             state = MENU_VIEW;
             break;
         case MENU_VIEW:
+         _delay_ms(5);
             if (menuIndex == 0) {
+                _delay_ms(5);
                 state = EDIT_PH_LEVEL;
                 _delay_ms(100);
             } else if (menuIndex == 1) {
+                _delay_ms(5);
                 state = EDIT_NUTRIENT_LEVEL;
                 _delay_ms(100);
             } else if (menuIndex == 2) {
+                _delay_ms(5);
                 state = EDIT_WATER_LEVEL;
                 _delay_ms(100);
             } else if (menuIndex == 3) {  // Handling the "Go back" selection
+                _delay_ms(5);
                 state = DEFAULT_VIEW;
                 _delay_ms(100);
             }
             break;
         case EDIT_PH_LEVEL:
+        _delay_ms(5);
         case EDIT_NUTRIENT_LEVEL:
+        _delay_ms(5);
         case EDIT_WATER_LEVEL:
+        _delay_ms(5);
             state = MENU_VIEW;
             control_water_pump(); // Check and control water pump after settings
             break;
@@ -238,9 +344,13 @@ void setup() {
     lcd_init();
     i2c_init(BDIV);
     rotary_init();
-    adc_init();
+    //adc_init();
+    adc_init_ph();
     PORTC |= (1<<PC5) | (1<<PC4); //initialize for i2c
-    timer0_init(); // Set up Timer0 for millis() function
+    //timer0_init(); // Set up Timer0 for millis() function
+
+    DDRC &= ~(1 << 1); //pH sensor
+    PORTC |= (1 << 1); //pH sensor
 
 
     //DDRB |= (1 << PB7); // Configure PB7 as output for relay
@@ -262,9 +372,49 @@ void loop() {
 }
 
 int main(void) {
-    setup();
+   setup();
+    //pump set ups
+    DDRB |= (1 << 7) | (1 << 0);
+	DDRD |= (1 << 5) | (1 << 6) | (1 << 7);
+
+	PORTB &= ~((1 << 7) | (1 << 0));
+	PORTD &= ~((1 << 5) | (1 << 6) | (1 << 7));
+		DDRC &= ~(1<<2);
+		PORTC |=(1<<2);
+
+
     while (1) {
-        loop();
+      loop();
+        PORTB |= (1<<7); // run pump to plants without turning off
+        if((pHLevel - phValue) > 0.3){
+            //add acid
+            PORTD |= (1<<7);
+            _delay_ms(1000);
+            PORTD &= ~(1<<7);
+            _delay_ms(500);
+        }
+        else if((pHLevel - phValue) < 0.3){
+            //add base
+            PORTB |= (1<<0);
+            _delay_ms(1000);
+            PORTB &= ~(1<<0);
+            _delay_ms(500);
+        }
+
+        PORTD |= (1<<5);
+        for(int i = 0; i < nutrientLevel; i++){
+            _delay_ms(1000);
+        }
+		PORTD &= ~(1<<5);
+		_delay_ms(500);
+
+		PORTD |= (1<<6);
+		for(int i = 0; i < nutrientLevel; i++){
+            _delay_ms(1000);
+        }
+		PORTD &= ~(1<<6);
+		_delay_ms(500);
+        
     }
     return 0;
 }
@@ -294,16 +444,27 @@ void updateSelector() {
 }
 
 void updateDisplay() {
-    char buffer[20];
+    char buffer[32];
     switch (state) {
         case DEFAULT_VIEW:
         		sci_out(0xfe);              // Clear the screen
       			sci_out(0x51);
             lcd_moveto(0, 0);
             check_temp_hum();
-            sprintf(buffer, "Water level: %d", currentWaterLevel);
+            read_ph();
+            sprintf(buffer, "Water level %d: ", desiredWaterLevel);
             lcd_moveto(2, 0);
             lcd_stringout(buffer);
+            if(currentWaterLevel >= desiredWaterLevel){
+                sprintf(buffer, "Good %d",currentWaterLevel);
+                lcd_moveto(2, 15);
+                lcd_stringout(buffer);
+            }
+            else{
+                sprintf(buffer, "Low %d",currentWaterLevel);
+                lcd_moveto(2, 15);
+                lcd_stringout(buffer);
+            }
             break;
         case MENU_VIEW:
         		sci_out(0xfe);              // Clear the screen
@@ -348,11 +509,11 @@ void updateDisplay() {
 void read_water_levels() {
     // Simulated water level reading; replace with actual ADC code
     currentWaterLevel = 0;
-    if (adc_read_channel(0) > 100) currentWaterLevel++;
-    if (adc_read_channel(1) > 100) currentWaterLevel++;
-    if (adc_read_channel(2) > 100) currentWaterLevel++;
+    if (adc_read_channel0() > 100) currentWaterLevel++;
+    if (adc_read_channel2() > 100) currentWaterLevel++;
+    if (adc_read_channel3() > 100) currentWaterLevel++;
     updateDisplay();
-    control_water_pump();
+    //control_water_pump();
 }
 
 void control_water_pump() {
